@@ -23,8 +23,17 @@ public:
     explicit AppendFile(const char *filename);
     ~AppendFile();
 
+    /**
+     * @brief 写数据
+    */
     void Append(const char *line, size_t len);
+    
+    /**
+     * @brief 刷新流缓冲区
+    */
     void Flush();
+
+
     size_t GetWriteBytes() const { return write_bytes_; }
 
 private:

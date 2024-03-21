@@ -42,3 +42,7 @@ void AppendFile::Append(const char *line, size_t len) {
 
     write_bytes_ += len;
 }
+
+void AppendFile::Flush() {
+    ::fflush(fp_);
+}
