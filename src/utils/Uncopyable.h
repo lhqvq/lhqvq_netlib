@@ -15,8 +15,8 @@ namespace lhqvq {
 class Uncopyable {
 protected:
     Uncopyable() = default;
-    Uncopyable(const Uncopyable &) = default;
-    Uncopyable& operator=(const Uncopyable &) = default;
+    Uncopyable(const Uncopyable &) = delete;
+    Uncopyable& operator=(const Uncopyable &) = delete;
     ~Uncopyable() = default;
 };
 
