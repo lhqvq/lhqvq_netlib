@@ -13,8 +13,7 @@
 
 #include "src/utils/Uncopyable.h"
 
-namespace lhqvq
-{
+namespace lhqvq {
 
 /**
  * @brief 单例模板，模板形参必须有默认构造函数

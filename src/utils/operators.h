@@ -14,8 +14,7 @@ namespace lhqvq {
  * @note 没有考虑多继承的问题，使用时注意
 */
 template <typename T>
-class LessThanComparable
-{
+class LessThanComparable {
 public:
     virtual bool operator<(const T &a, const T &b) = 0;
 
@@ -37,8 +36,7 @@ public:
  * @note 没有考虑多继承的问题，使用时注意
  */
 template <typename T>
-class EqualityComparable
-{
+class EqualityComparable {
 public:
     virtual bool operator>=(const T &a, const T &b) = 0;
 
