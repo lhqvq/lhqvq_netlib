@@ -109,6 +109,13 @@ private:
     uint64_t microsecondsSinceEpoch_;
 };
 
+inline bool operator<(const Timestamp &lhs, const Timestamp &rhs) {
+    return lhs.GetMicroseconds() < rhs.GetMicroseconds();
+}
+
+inline bool operator==(const Timestamp &lhs, const Timestamp &rhs) {
+    return lhs.GetMicroseconds() == rhs.GetMicroseconds();
+}
 
 } // namespace lhqvq
 

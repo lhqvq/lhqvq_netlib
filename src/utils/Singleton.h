@@ -25,7 +25,7 @@ public:
     ~Singleton() = delete;
 
     /**
-     * @brief C++ 11 要求编译器对这段代码做多线程安全的优化
+     * @brief 返回单例类对象
     */
     static T& GetInstance() {
         ::pthread_once(&init_flag_, Init);

@@ -38,7 +38,7 @@ public:
      * @brief 从阻塞队列中取出数据
      */
     T Pop() {
-        std::lock_guard<std::mutex> lck(mtx_);
+        std::unique_lock<std::mutex> lck(mtx_);
         while (queue_.empty()) {
             condition_.wait();
         }
