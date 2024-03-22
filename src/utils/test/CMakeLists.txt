@@ -1,0 +1,2 @@
+add_executable(Copyable_test Copyable_test.cpp)
+target_link_libraries(Copyable_test lhqvq)

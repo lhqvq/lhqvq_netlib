@@ -28,12 +28,24 @@ public:
      * @brief C++ 11 要求编译器对这段代码做多线程安全的优化
     */
     static T& GetInstance() {
-        ptr_ = new T();
+        ::pthread_once(&init_flag_, Init);
         return *ptr_;
     }
 
 private:
+
+    static void Init() {
+        ptr_ = new T();
+        ::atexit(Destory);
+    }
+
+    static void Destory() {
+        delete ptr_;
+        ptr_ = nullptr;
+    }
+
     static T *ptr_;
+    static pthread_once_t init_flag_;
 };
 
 template <typename T>
