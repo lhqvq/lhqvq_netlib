@@ -62,3 +62,95 @@ void UpdateTimerfd(int timerfd, Timestamp expiration) {
 
 } // namespace detail
 } // namespace lhqvq
+
+using lhqvq::Timer;
+using lhqvq::TimerIndex;
+using lhqvq::TimerQueue;
+
+TimerQueue::TimerQueue(EventLoop *loop)
+    : loop_(loop),
+      timerfd_(detail::CreateTimerfd()),
+      timerfdChannel_(loop, timerfd_),
+      timers_() {
+    timerfdChannel_.SetReadCallback(std::bind(&TimerQueue::HandleRead, this));
+    timerfdChannel_.EnableReading();
+}
+
+TimerQueue::~TimerQueue() {
+    timerfdChannel_.DisableAll();
+    timerfdChannel_.RemoveFromPoller();
+    ::close(timerfd_);
+    // 删除剩余的定时器.
+    for (const TimerIndex &timerIndex : timers_) {
+        delete timerIndex.timer_;
+    }
+}
+
+TimerIndex TimerQueue::AddTimer(Timer::TimerCallback cb,
+                                Timestamp when,
+                                double interval) {
+    Timer *timer = new Timer(cb, when, interval); // 在这里 new, 记得delete.
+    loop_->RunInLoop(std::bind(&TimerQueue::AddTimerInLoop, this, timer));
+    return TimerIndex(timer, when, timer->Sequence());
+}
+
+void TimerQueue::CancelTimer(TimerIndex timerIndex) {
+    loop_->RunInLoop(std::bind(&TimerQueue::CancelTimerInLoop, this, timerIndex));
+}
+
+void TimerQueue::AddTimerInLoop(Timer *timer) {
+    assert(loop_->IsInLoopThread());
+    TimerIndex toAdd(timer, timer->Expiration(), timer->Sequence());
+
+    if (toAdd.Expiration() < timers_.begin()->Expiration() ||
+        timers_.empty()) { // 如果即将加入的计时器到期时间最早.
+        // 更新  timerfd 到期时间.
+        detail::UpdateTimerfd(timerfd_, toAdd.Expiration());
+    }
+    // 将其加入 timers_ 中.
+    std::pair<std::set<TimerIndex>::iterator, bool> ret = timers_.insert(toAdd);
+    assert(ret.second == true);
+}
+
+void TimerQueue::CancelTimerInLoop(TimerIndex timerIndex) {
+    assert(loop_->IsInLoopThread());
+    if (timers_.find(timerIndex) != timers_.end()) {
+        // 只需要移除, 没必要再更改 timerfd 的到期时间.
+        timers_.erase(timerIndex);
+        delete timerIndex.timer_; // 删除要取消的定时器.
+    }
+}
+
+void TimerQueue::HandleRead() {
+    // 处理可读事件, 说明有计时器到期.
+    assert(loop_->IsInLoopThread());
+    Timestamp now = Timestamp::Now();
+    detail::ReadTimerfd(timerfd_);
+
+    // 执行已到期的定时器回调, 之后复用或者删除定时器.
+    std::vector<TimerIndex> expired = GetExpired(now);
+    for (const TimerIndex &timerIndex : expired) {
+        timerIndex.timer_->Run();
+
+        if (timerIndex.timer_->IsRepeated()) {
+            timerIndex.timer_->Restart(now);
+            AddTimerInLoop(timerIndex.timer_);
+        } else {
+            delete timerIndex.timer_; // 删除已过期且不需要重启的定时器.
+        }
+    }
+    // 如果队列中还有定时器, 更新 timerfd_ 的到期时间.
+    if (!timers_.empty()) {
+        detail::UpdateTimerfd(timerfd_, timers_.begin()->Expiration());
+    }
+}
+
+std::vector<TimerIndex> TimerQueue::GetExpired(Timestamp now) {
+    // 在 timers_ 中寻找 now 时刻已到期的定时器.
+    // 如果到期时间相同, sentry 总是大者.
+    TimerIndex sentry(nullptr, now, INT64_MAX);
+    std::set<TimerIndex>::iterator it = timers_.lower_bound(sentry);
+    std::vector<TimerIndex> expired(timers_.begin(), it);
+    timers_.erase(timers_.begin(), it);
+    return expired;
+}

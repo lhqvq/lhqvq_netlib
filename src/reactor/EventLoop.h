@@ -43,18 +43,23 @@ public:
     // 在loop线程中执行任务 cb.
     // 如果在非loop线程中调用, 会转而调用 QueueInLoop().
     void RunInLoop(Functor cb);
+
     // 将 cb 加入待处理队列中. loop线程会取出执行.
     // 可能会在非loop线程执行.
     void QueueInLoop(Functor cb);
 
     // 在 time 指定的时刻执行回调函数 cb.
     TimerIndex RunAt(Timestamp time, Timer::TimerCallback cb);
+    
     // 在 delay 秒后执行回调函数 cb.
     TimerIndex RunAfter(double delay, Timer::TimerCallback cb);
+    
     // 以 interval 秒的间隔定期执行回调函数 cb.
     TimerIndex RunEvery(double interval, Timer::TimerCallback cb);
+    
     // 取消 timerIndex 所指定的定时器任务 .
     void CancelTimer(TimerIndex timerIndex);
+    
     // 用 channel 更新 Poller 中的 Channel 列表.
     void UpdateChannel(Channel* channel);
     void RemoveChannel(Channel* channel);
